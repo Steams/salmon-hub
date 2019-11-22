@@ -3,93 +3,119 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/steams/salmon-hub/pkg/storage"
+	"github.com/steams/salmon-hub/pkg/domain/media"
+	"github.com/steams/salmon-hub/pkg/domain/user"
 	"log"
 	"net/http"
 	"os"
 )
 
-func synch_handler(store storage.MediaStorage) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func synch_handler(w http.ResponseWriter, r *http.Request) {
 
-		switch r.Method {
-		case "GET":
+	switch r.Method {
+	case "GET":
 
-			hashes := store.ListHashes()
+		id := r.Header.Get("Authorization")
 
-			js, err := json.Marshal(hashes)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+		if id == "" {
+			http.Error(w, "userid not present", http.StatusBadRequest)
+			return
+		}
+		hashes := media.ListHashes(id)
 
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
+		js, err := json.Marshal(hashes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		case "POST":
-			var hashes []string
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
 
-			fmt.Println("POST DELETE REQUEST")
-			if r.Body == nil {
-				http.Error(w, "Please send a request body", 400)
-				return
-			}
-			err := json.NewDecoder(r.Body).Decode(&hashes)
-			fmt.Fprintln(os.Stdout, "HASHES: %+v", hashes)
+	case "POST":
+		var hashes []string
 
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+		id := r.Header.Get("Authorization")
+		if id == "" {
+			http.Error(w, "userid not present", http.StatusBadRequest)
+			return
+		}
 
-			for _, hash := range hashes {
-				store.Delete(hash)
-			}
+		fmt.Println("POST DELETE REQUEST")
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", 400)
+			return
+		}
+		err := json.NewDecoder(r.Body).Decode(&hashes)
+		fmt.Fprintln(os.Stdout, "HASHES: %+v", hashes)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		for _, hash := range hashes {
+			media.Delete(id, hash)
 		}
 	}
 
 }
 
-func media_handler(store storage.MediaStorage) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func media_handler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
 
-		switch r.Method {
-		case "GET":
+		id := r.Header.Get("Authorization")
 
-			media_list := store.List()
-
-			js, err := json.Marshal(media_list)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
-
-		case "POST":
-			// TODO This file should not reference storages definition of Media because this is an input API endpoint, from the opposite direction than the DB
-			var m []storage.Media
-
-			fmt.Println("POST REQUEST")
-			if r.Body == nil {
-				http.Error(w, "Please send a request body", 400)
-				return
-			}
-			err := json.NewDecoder(r.Body).Decode(&m)
-			fmt.Fprintln(os.Stdout, "BODY: \n%+v", m)
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-
-			for _, song := range m {
-				store.Add(song)
-			}
+		if id == "" {
+			http.Error(w, "userid not present", http.StatusBadRequest)
+			return
 		}
-	}
 
+		media_list := media.List(id)
+
+		js, err := json.Marshal(media_list)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
+		return
+
+	case "POST":
+
+		id := r.Header.Get("Authorization")
+
+		if id == "" {
+			http.Error(w, "userid not present", http.StatusBadRequest)
+			return
+		}
+
+		// NOTE Perhaps its idiomatic in go to call this media.Model instead ?
+		var songs []media.Media
+
+		fmt.Println("POST REQUEST")
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", 400)
+			return
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&songs)
+		fmt.Fprintln(os.Stdout, "BODY: \n%+v", songs)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		for _, song := range songs {
+			fmt.Println(song)
+			media.Add(id, song)
+		}
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func file_handler(w http.ResponseWriter, r *http.Request) {
@@ -99,11 +125,12 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 
 func Run() {
 
-	storage := storage.Open()
+	user.Add("admin", "password")
+	fmt.Println(user.Get("admin", "password"))
 
 	http.HandleFunc("/", file_handler)
-	http.HandleFunc("/media", media_handler(storage))
-	http.HandleFunc("/synch", synch_handler(storage))
+	http.HandleFunc("/media", media_handler)
+	http.HandleFunc("/synch", synch_handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
