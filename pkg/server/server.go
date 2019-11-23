@@ -10,6 +10,38 @@ import (
 	"os"
 )
 
+func auth_handler(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	case "POST":
+		var u user.User
+
+		fmt.Println("POST LOGIN")
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", 400)
+			return
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&u)
+		fmt.Fprintln(os.Stdout, "login: %+v", u)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		res := user.Login(u)
+		if res == "" {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		js, err := json.Marshal(user.Login(u))
+		w.Write(js)
+	}
+
+}
+
 func synch_handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
@@ -119,7 +151,13 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func file_handler(w http.ResponseWriter, r *http.Request) {
-	path := "/home/steams/Development/audigo/salmon-web-client/" + r.URL.Path[1:]
+	fmt.Println(r.URL.Path)
+	if r.URL.Path == "/elm.js" {
+		http.ServeFile(w, r, "/home/steams/Development/audigo/salmon-web-client/elm.js")
+		return
+	}
+	// path := "/home/steams/Development/audigo/salmon-web-client/" + r.URL.Path[1:]
+	path := "/home/steams/Development/audigo/salmon-web-client/index.html"
 	http.ServeFile(w, r, path)
 }
 
@@ -131,6 +169,7 @@ func Run() {
 	http.HandleFunc("/", file_handler)
 	http.HandleFunc("/media", media_handler)
 	http.HandleFunc("/synch", synch_handler)
+	http.HandleFunc("/api/login", auth_handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }

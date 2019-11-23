@@ -13,6 +13,10 @@ func Add(username, password string) {
 	storage.UserStore().Add(username, password)
 }
 
+func Login(u User) string {
+	return storage.UserStore().Get(u.Username, u.Password).Id
+}
+
 func Get(username, password string) User {
 	return from_db(storage.UserStore().Get(username, password))
 }
