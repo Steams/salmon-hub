@@ -6,6 +6,8 @@ import (
 
 type Media struct {
 	Title    string
+	Artist   string
+	Album    string
 	Duration int
 	Playlist string
 	Hash     string
@@ -30,6 +32,8 @@ func Delete(id, hash string) {
 func from_db(m storage.Media) Media {
 	return Media{
 		Title:    m.Title,
+		Artist:   m.Artist,
+		Album:    m.Album,
 		Duration: m.Duration,
 		Playlist: m.Playlist,
 		Hash:     m.Hash,
@@ -39,6 +43,8 @@ func from_db(m storage.Media) Media {
 func to_db(id string, m Media) storage.Media {
 	return storage.Media{
 		Title:    m.Title,
+		Artist:   m.Artist,
+		Album:    m.Album,
 		Duration: m.Duration,
 		Hash:     m.Hash,
 		Playlist: m.Playlist,

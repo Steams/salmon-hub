@@ -8,6 +8,8 @@ import (
 
 type Media struct {
 	Title    string
+	Artist   string
+	Album    string
 	Duration int
 	Playlist string
 	Hash     string
@@ -35,11 +37,11 @@ func (x media_storage_impl) Delete(user_id, hash string) {
 }
 
 func (x media_storage_impl) Add(m Media) {
-	stmt, err := x.db.Preparex("INSERT INTO Media(title, duration, playlist, hash, userid) values(?,?,?,?,?)")
+	stmt, err := x.db.Preparex("INSERT INTO Media(title, artist, album, duration, playlist, hash, userid) values(?,?,?,?,?,?,?)")
 	if err != nil {
 		panic(err)
 	}
-	stmt.MustExec(m.Title, m.Duration, m.Playlist, m.Hash, m.UserID)
+	stmt.MustExec(m.Title, m.Artist, m.Album, m.Duration, m.Playlist, m.Hash, m.UserID)
 }
 
 func (x media_storage_impl) List(user_id string) []Media {

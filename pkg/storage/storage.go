@@ -10,6 +10,8 @@ import (
 const media_schema = `
 CREATE TABLE media (
     title text,
+    artist text,
+    album text,
     duration int,
     playlist text,
     hash text,
