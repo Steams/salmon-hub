@@ -9,12 +9,18 @@ type User struct {
 	Password string
 }
 
-func Add(username, password string) {
+type SignupForm struct {
+	Username string
+	Password string
+	Email    string
+}
+
+func Add(username, password, email string) {
 	storage.UserStore().Add(username, password)
 }
 
-func Login(u User) string {
-	return storage.UserStore().Get(u.Username, u.Password).Id
+func Login(username, password string) string {
+	return storage.UserStore().Get(username, password).Id
 }
 
 func Get(username, password string) User {

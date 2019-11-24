@@ -10,7 +10,34 @@ import (
 	"os"
 )
 
-func auth_handler(w http.ResponseWriter, r *http.Request) {
+func signup_handler(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	case "POST":
+		var u user.SignupForm
+
+		fmt.Println("POST SIGNUP")
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", 400)
+			return
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&u)
+		fmt.Fprintln(os.Stdout, "login: %+v", u)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		user.Add(u.Username, u.Password, u.Email)
+		js, err := json.Marshal(user.Login(u.Username, u.Password))
+		w.Write(js)
+	}
+
+}
+
+func login_handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "POST":
@@ -30,13 +57,13 @@ func auth_handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res := user.Login(u)
+		res := user.Login(u.Username, u.Password)
 		if res == "" {
 			http.Error(w, "User not found", http.StatusUnauthorized)
 			return
 		}
 
-		js, err := json.Marshal(user.Login(u))
+		js, err := json.Marshal(res)
 		w.Write(js)
 	}
 
@@ -163,13 +190,14 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 
 func Run() {
 
-	user.Add("admin", "password")
-	fmt.Println(user.Get("admin", "password"))
+	// user.Add("admin", "password")
+	// fmt.Println(user.Get("admin", "password"))
 
 	http.HandleFunc("/", file_handler)
 	http.HandleFunc("/media", media_handler)
 	http.HandleFunc("/synch", synch_handler)
-	http.HandleFunc("/api/login", auth_handler)
+	http.HandleFunc("/api/login", login_handler)
+	http.HandleFunc("/api/signup", signup_handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
