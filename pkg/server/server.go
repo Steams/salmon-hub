@@ -10,7 +10,47 @@ import (
 	"os"
 )
 
-func signup_handler(w http.ResponseWriter, r *http.Request) {
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func verification_handler(w http.ResponseWriter, r *http.Request) {
+
+	// enableCors(&w) NOTE You dont want people signing up over the raw api
+
+	switch r.Method {
+	case "POST":
+		var token string
+
+		fmt.Println("POST SIGNUP")
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", 400)
+			return
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&token)
+		fmt.Fprintln(os.Stdout, "login: %+v", token)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		form, error := user.Verify(token)
+		if error != nil {
+			http.Error(w, error.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		user.Add(form.Username, form.Password, form.Email)
+		js, err := json.Marshal(user.Login(form.Username, form.Password))
+		w.Write(js)
+	}
+
+}
+
+func signup_handler_stub(w http.ResponseWriter, r *http.Request) {
+	// enableCors(&w) NOTE You dont want people signing up over the raw api
 
 	switch r.Method {
 	case "POST":
@@ -30,14 +70,46 @@ func signup_handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user.Add(u.Username, u.Password, u.Email)
+		// token := user.Signup(u.Username, u.Password, u.Email)
+		user.Signup(u.Username, u.Password, u.Email)
 		js, err := json.Marshal(user.Login(u.Username, u.Password))
+		// js, err := json.Marshal(token)
 		w.Write(js)
 	}
 
 }
 
+// func signup_handler(w http.ResponseWriter, r *http.Request) {
+// 	// enableCors(&w) NOTE You dont want people signing up over the raw api
+
+// 	switch r.Method {
+// 	case "POST":
+// 		var u user.SignupForm
+
+// 		fmt.Println("POST SIGNUP")
+// 		if r.Body == nil {
+// 			http.Error(w, "Please send a request body", 400)
+// 			return
+// 		}
+
+// 		err := json.NewDecoder(r.Body).Decode(&u)
+// 		fmt.Fprintln(os.Stdout, "login: %+v", u)
+
+// 		if err != nil {
+// 			http.Error(w, err.Error(), http.StatusBadRequest)
+// 			return
+// 		}
+
+// 		token := user.Signup(u.Username, u.Password, u.Email)
+// 		// js, err := json.Marshal(user.Login(u.Username, u.Password))
+// 		js, err := json.Marshal(token)
+// 		w.Write(js)
+// 	}
+
+// }
+
 func login_handler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 
 	switch r.Method {
 	case "POST":
@@ -70,6 +142,7 @@ func login_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func synch_handler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 
 	switch r.Method {
 	case "GET":
@@ -121,6 +194,8 @@ func synch_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func media_handler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+
 	switch r.Method {
 	case "GET":
 
@@ -178,6 +253,8 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func file_handler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+
 	fmt.Println(r.URL.Path)
 	if r.URL.Path == "/elm.js" {
 		http.ServeFile(w, r, "/home/steams/Development/audigo/salmon-web-client/elm.js")
@@ -190,14 +267,15 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 
 func Run() {
 
-	// user.Add("admin", "password")
+	// user.Add("admin", "password", "email")
 	// fmt.Println(user.Get("admin", "password"))
 
 	http.HandleFunc("/", file_handler)
 	http.HandleFunc("/media", media_handler)
 	http.HandleFunc("/synch", synch_handler)
 	http.HandleFunc("/api/login", login_handler)
-	http.HandleFunc("/api/signup", signup_handler)
+	http.HandleFunc("/api/signup", signup_handler_stub)
+	http.HandleFunc("/api/verify", verification_handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }

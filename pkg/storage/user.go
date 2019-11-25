@@ -1,7 +1,7 @@
 package storage
 
 import (
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
@@ -37,8 +37,8 @@ func (x user_storage_impl) Add(username, password string) {
 	if err != nil {
 		panic(err)
 	}
-	// stmt.MustExec(uuid.New().String(), username, password)
-	stmt.MustExec("1", username, password)
+	stmt.MustExec(uuid.New().String(), username, password)
+	// stmt.MustExec("1", username, password)
 }
 
 func (x user_storage_impl) Get(username, password string) User {
