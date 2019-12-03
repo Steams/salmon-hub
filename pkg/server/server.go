@@ -72,9 +72,18 @@ func signup_handler_stub(w http.ResponseWriter, r *http.Request) {
 
 		// token := user.Signup(u.Username, u.Password, u.Email)
 		user.Signup(u.Username, u.Password, u.Email)
-		js, err := json.Marshal(user.Login(u.Username, u.Password))
-		// js, err := json.Marshal(token)
-		w.Write(js)
+
+		res := user.Login(u.Username, u.Password)
+		if res == "" {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		cookie := http.Cookie{Name: "session_token", Value: res, HttpOnly: true}
+
+		http.SetCookie(w, &cookie)
+
+		w.WriteHeader(http.StatusOK)
 	}
 
 }
@@ -109,7 +118,8 @@ func signup_handler_stub(w http.ResponseWriter, r *http.Request) {
 // }
 
 func login_handler(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+
+	defer enableCors(&w)
 
 	switch r.Method {
 	case "POST":
@@ -135,8 +145,11 @@ func login_handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		js, err := json.Marshal(res)
-		w.Write(js)
+		cookie := http.Cookie{Name: "session_token", Value: res, HttpOnly: true}
+
+		http.SetCookie(w, &cookie)
+
+		w.WriteHeader(http.StatusOK)
 	}
 
 }
@@ -147,13 +160,14 @@ func synch_handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 
-		id := r.Header.Get("Authorization")
+		id, err := r.Cookie("session_token")
 
-		if id == "" {
+		if err != nil {
 			http.Error(w, "userid not present", http.StatusBadRequest)
 			return
 		}
-		hashes := media.ListHashes(id)
+
+		hashes := media.ListHashes(id.Value)
 
 		js, err := json.Marshal(hashes)
 		if err != nil {
@@ -167,8 +181,9 @@ func synch_handler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		var hashes []string
 
-		id := r.Header.Get("Authorization")
-		if id == "" {
+		id, err := r.Cookie("session_token")
+
+		if err != nil {
 			http.Error(w, "userid not present", http.StatusBadRequest)
 			return
 		}
@@ -178,7 +193,7 @@ func synch_handler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Please send a request body", 400)
 			return
 		}
-		err := json.NewDecoder(r.Body).Decode(&hashes)
+		err = json.NewDecoder(r.Body).Decode(&hashes)
 		fmt.Fprintln(os.Stdout, "HASHES: %+v", hashes)
 
 		if err != nil {
@@ -187,7 +202,7 @@ func synch_handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, hash := range hashes {
-			media.Delete(id, hash)
+			media.Delete(id.Value, hash)
 		}
 	}
 
@@ -199,14 +214,21 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 
-		id := r.Header.Get("Authorization")
+		id, err := r.Cookie("session_token")
 
-		if id == "" {
+		if err != nil {
 			http.Error(w, "userid not present", http.StatusBadRequest)
 			return
 		}
 
-		media_list := media.List(id)
+		media_list := media.List(id.Value)
+
+		if media_list == nil {
+			js, _ := json.Marshal([]media.Media{})
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+			return
+		}
 
 		js, err := json.Marshal(media_list)
 		if err != nil {
@@ -220,9 +242,9 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 
 	case "POST":
 
-		id := r.Header.Get("Authorization")
+		id, err := r.Cookie("session_token")
 
-		if id == "" {
+		if err != nil {
 			http.Error(w, "userid not present", http.StatusBadRequest)
 			return
 		}
@@ -236,7 +258,7 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := json.NewDecoder(r.Body).Decode(&songs)
+		err = json.NewDecoder(r.Body).Decode(&songs)
 		fmt.Fprintln(os.Stdout, "BODY: \n%+v", songs)
 
 		if err != nil {
@@ -246,7 +268,7 @@ func media_handler(w http.ResponseWriter, r *http.Request) {
 
 		for _, song := range songs {
 			fmt.Println(song)
-			media.Add(id, song)
+			media.Add(id.Value, song)
 		}
 		w.WriteHeader(http.StatusOK)
 	}
@@ -267,8 +289,8 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 
 func Run() {
 
-	// user.Add("admin", "password", "email")
-	// fmt.Println(user.Get("admin", "password"))
+	user.Add("admin", "password", "email")
+	fmt.Println(user.Get("admin", "password"))
 
 	http.HandleFunc("/", file_handler)
 	http.HandleFunc("/media", media_handler)
