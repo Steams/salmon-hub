@@ -30,8 +30,8 @@ func (s server_imp) Run() error {
 
 	http.HandleFunc("/media", handlers.Media_handler(s.mediaService, s.sessionService))
 	http.HandleFunc("/signup", handlers.Signup_handler(s.userService))
-	http.HandleFunc("/api/login", handlers.Login_handler(s.userService, s.sessionService)) //this is api/login because /login is the route to serve the login page, its not to be used for media server communication
-
+	http.HandleFunc("/api/login", handlers.Login_handler(s.userService, s.sessionService))
+	http.HandleFunc("/csrf", handlers.Csrf_handler(s.userService, s.sessionService))
 	// Routes for media server, these routes dont use cookie based auth
 	http.HandleFunc("/api/synch", handlers.Synch_handler(s.mediaService))
 	http.HandleFunc("/api/media", handlers.API_Media_handler(s.mediaService))

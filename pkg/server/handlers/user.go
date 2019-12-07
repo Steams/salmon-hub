@@ -38,13 +38,44 @@ func Login_handler(user_service user.Service, session_service session.Service) h
 				return
 			}
 
-			session_token := session_service.Create(user_id)
+			session_token, csrf_token := session_service.Create(user_id)
 
 			cookie := http.Cookie{Name: "session_token", Value: session_token, HttpOnly: true, Path: "/"}
 			http.SetCookie(w, &cookie)
-			// w.WriteHeader(http.StatusOK)
-			// js, err := json.Marshal(res)
-			// w.Write(js)
+			w.WriteHeader(http.StatusOK)
+			js, err := json.Marshal(csrf_token)
+			w.Write(js)
+		}
+
+	}
+
+}
+
+func Csrf_handler(user_service user.Service, session_service session.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// defer enableCors(&w)
+
+		switch r.Method {
+		case "GET":
+
+			cookie, err := r.Cookie("session_token")
+
+			if err != nil {
+				http.Error(w, "session token not present", http.StatusBadRequest)
+				return
+			}
+
+			csrf_token := session_service.Csrf(cookie.Value)
+
+			js, err := json.Marshal(csrf_token)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
 		}
 
 	}

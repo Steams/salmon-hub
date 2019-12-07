@@ -72,14 +72,26 @@ func Media_handler(media_service media.Service, session_service session.Service)
 		switch r.Method {
 		case "GET":
 
-			token, err := r.Cookie("session_token")
+			cookie, err := r.Cookie("session_token")
 
 			if err != nil {
 				http.Error(w, "userid not present", http.StatusBadRequest)
 				return
 			}
 
-			id := session_service.Get(token.Value)
+			csrf_token := r.Header.Get("Authorization")
+
+			if csrf_token == "" {
+				http.Error(w, "csrf token not present", http.StatusBadRequest)
+				return
+			}
+
+			if session_service.Validate(cookie.Value, csrf_token) == false {
+				http.Error(w, "csrf token does not match session", http.StatusBadRequest)
+				return
+			}
+
+			id := session_service.Get(cookie.Value)
 
 			media_list := media_service.List(id)
 
