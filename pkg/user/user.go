@@ -24,7 +24,7 @@ type Repository interface {
 type Service interface {
 	Signup(username, password, email string)
 	// Verify(jwt string) string
-	Login(username, password string) string
+	Login(username, password string) (string, error)
 }
 
 func CreateService(r Repository) Service {
@@ -39,8 +39,8 @@ func (s service_imp) Signup(username, password, email string) {
 	s.repo.Add(SignupForm{username, password, email})
 }
 
-func (s service_imp) Login(username, password string) string {
-	return s.repo.Get(username, password)
+func (s service_imp) Login(username, password string) (string, error) {
+	return s.repo.Get(username, password), nil
 }
 
 // take user info,generate a jwt token containing user info and use it as a link, when the link is sent back to verify the token, extract info

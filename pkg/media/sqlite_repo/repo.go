@@ -94,7 +94,7 @@ func (r repository) ListHashes(user_id string) []string {
 
 func (r repository) Delete(user_id string, hash string) {
 
-	stmt, err := r.db.Preparex("DELETE FROM Media WHERE hash = ? and userid = ?)")
+	stmt, err := r.db.Preparex("DELETE FROM Media WHERE hash = ? and userid = ?")
 	if err != nil {
 		panic(err)
 	}

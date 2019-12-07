@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/steams/salmon-hub/pkg/media"
+	"github.com/steams/salmon-hub/pkg/session"
 	"net/http"
 	"os"
 )
@@ -15,17 +16,13 @@ func Synch_handler(service media.Service) http.HandlerFunc {
 
 		switch r.Method {
 		case "GET":
-
-			// id, err := r.Cookie("session_token")
 			id := r.Header.Get("Authorization")
 
-			// if err != nil OR {
 			if id == "" {
 				http.Error(w, "userid not present", http.StatusBadRequest)
 				return
 			}
 
-			// hashes := service.ListHashes(id.Value)
 			hashes := service.ListHashes(id)
 
 			js, err := json.Marshal(hashes)
@@ -39,10 +36,9 @@ func Synch_handler(service media.Service) http.HandlerFunc {
 
 		case "POST":
 			var hashes []string
+			id := r.Header.Get("Authorization")
 
-			id, err := r.Cookie("session_token")
-
-			if err != nil {
+			if id == "" {
 				http.Error(w, "userid not present", http.StatusBadRequest)
 				return
 			}
@@ -52,7 +48,7 @@ func Synch_handler(service media.Service) http.HandlerFunc {
 				http.Error(w, "Please send a request body", 400)
 				return
 			}
-			err = json.NewDecoder(r.Body).Decode(&hashes)
+			err := json.NewDecoder(r.Body).Decode(&hashes)
 			fmt.Fprintln(os.Stdout, "HASHES: %+v", hashes)
 
 			if err != nil {
@@ -61,14 +57,14 @@ func Synch_handler(service media.Service) http.HandlerFunc {
 			}
 
 			for _, hash := range hashes {
-				service.Delete(id.Value, hash)
+				service.Delete(id, hash)
 			}
 		}
 
 	}
 }
 
-func Media_handler(service media.Service) http.HandlerFunc {
+func Media_handler(media_service media.Service, session_service session.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// defer enableCors(&w)
@@ -76,12 +72,45 @@ func Media_handler(service media.Service) http.HandlerFunc {
 		switch r.Method {
 		case "GET":
 
-			// id, err := r.Cookie("session_token")
+			token, err := r.Cookie("session_token")
 
-			// if err != nil {
-			// 	http.Error(w, "userid not present", http.StatusBadRequest)
-			// 	return
-			// }
+			if err != nil {
+				http.Error(w, "userid not present", http.StatusBadRequest)
+				return
+			}
+
+			id := session_service.Get(token.Value)
+
+			media_list := media_service.List(id)
+
+			if media_list == nil {
+				js, _ := json.Marshal([]media.Media{})
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(js)
+				return
+			}
+
+			js, err := json.Marshal(media_list)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+			return
+
+		}
+	}
+}
+
+func API_Media_handler(service media.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// defer enableCors(&w)
+
+		switch r.Method {
+		case "GET":
 
 			id := r.Header.Get("Authorization")
 
@@ -111,13 +140,6 @@ func Media_handler(service media.Service) http.HandlerFunc {
 			return
 
 		case "POST":
-
-			// id, err := r.Cookie("session_token")
-
-			// if err != nil {
-			// 	http.Error(w, "userid not present", http.StatusBadRequest)
-			// 	return
-			// }
 
 			id := r.Header.Get("Authorization")
 

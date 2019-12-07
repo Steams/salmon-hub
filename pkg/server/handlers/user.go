@@ -3,12 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/steams/salmon-hub/pkg/session"
 	"github.com/steams/salmon-hub/pkg/user"
 	"net/http"
 	"os"
 )
 
-func Login_handler(service user.Service) http.HandlerFunc {
+func Login_handler(user_service user.Service, session_service session.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// defer enableCors(&w)
@@ -31,19 +32,57 @@ func Login_handler(service user.Service) http.HandlerFunc {
 				return
 			}
 
-			res := service.Login(u.Username, u.Password)
-			if res == "" {
+			user_id, err := user_service.Login(u.Username, u.Password)
+			if err != nil {
 				http.Error(w, "User not found", http.StatusUnauthorized)
 				return
 			}
 
-			js, err := json.Marshal(res)
-			w.Write(js)
-			// cookie := http.Cookie{Name: "session_token", Value: res, HttpOnly: true}
+			session_token := session_service.Create(user_id)
 
-			// http.SetCookie(w, &cookie)
-
+			cookie := http.Cookie{Name: "session_token", Value: session_token, HttpOnly: true, Path: "/"}
+			http.SetCookie(w, &cookie)
 			// w.WriteHeader(http.StatusOK)
+			// js, err := json.Marshal(res)
+			// w.Write(js)
+		}
+
+	}
+
+}
+
+func Register_handler(user_service user.Service, session_service session.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// defer enableCors(&w)
+
+		switch r.Method {
+		case "POST":
+			var u user.User
+
+			fmt.Println("POST LOGIN")
+			if r.Body == nil {
+				http.Error(w, "Please send a request body", 400)
+				return
+			}
+
+			err := json.NewDecoder(r.Body).Decode(&u)
+			fmt.Fprintln(os.Stdout, "login: %+v", u)
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			user_id, err := user_service.Login(u.Username, u.Password)
+			if err != nil {
+				http.Error(w, "User not found", http.StatusUnauthorized)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			js, err := json.Marshal(user_id)
+			w.Write(js)
 		}
 
 	}
@@ -76,8 +115,8 @@ func Signup_handler(service user.Service) http.HandlerFunc {
 			// token := user.Signup(u.Username, u.Password, u.Email)
 			service.Signup(u.Username, u.Password, u.Email)
 
-			res := service.Login(u.Username, u.Password)
-			if res == "" {
+			res, err := service.Login(u.Username, u.Password)
+			if err != nil {
 				http.Error(w, "User not found", http.StatusUnauthorized)
 				return
 			}

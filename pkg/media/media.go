@@ -35,12 +35,25 @@ func (s service_imp) Add(id string, m Media) {
 	s.repo.Add(id, m)
 }
 
+// TODO these should probably return error if id doesnt exist ?
 func (s service_imp) List(id string) []Media {
-	return s.repo.List(id)
+	media := s.repo.List(id)
+
+	if media == nil {
+		return []Media{}
+	}
+
+	return media
 }
 
 func (s service_imp) ListHashes(id string) []string {
-	return s.repo.ListHashes(id)
+	hashes := s.repo.ListHashes(id)
+
+	if hashes == nil {
+		return []string{}
+	}
+
+	return hashes
 }
 
 func (s service_imp) Delete(id, hash string) {
