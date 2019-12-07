@@ -32,7 +32,28 @@ func (r repository) Add(user_id, session_id string) {
 	stmt.MustExec(session_id, user_id)
 }
 
-func (r repository) Get(session_id string) string {
+func (r repository) Retrieve(user_id string) string {
+	rows, err := r.db.Queryx("SELECT session_id FROM Session WHERE user_id = $1", user_id)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var id string = ""
+
+	for rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		break
+	}
+	rows.Close()
+
+	return id
+}
+
+func (r repository) Resolve(session_id string) string {
 
 	rows, err := r.db.Queryx("SELECT user_id FROM Session WHERE session_id = $1", session_id)
 

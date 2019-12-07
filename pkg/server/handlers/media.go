@@ -91,9 +91,13 @@ func Media_handler(media_service media.Service, session_service session.Service)
 				return
 			}
 
-			id := session_service.Get(cookie.Value)
+			user_id, err := session_service.Resolve(cookie.Value)
 
-			media_list := media_service.List(id)
+			if err != nil {
+				http.Error(w,"invalid sessionn id", http.StatusBadRequest)
+			}
+
+			media_list := media_service.List(user_id)
 
 			if media_list == nil {
 				js, _ := json.Marshal([]media.Media{})

@@ -26,7 +26,7 @@ func New(u user.Service, m media.Service, s session.Service, port string) Server
 
 func (s server_imp) Run() error {
 	// user.Add("admin", "password", "email")
-	// fmt.Println(user.Get("admin", "password"))
+	// fmt.Println(user.Resolve("admin", "password"))
 
 	http.HandleFunc("/media", handlers.Media_handler(s.mediaService, s.sessionService))
 	http.HandleFunc("/signup", handlers.Signup_handler(s.userService))

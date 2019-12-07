@@ -38,13 +38,24 @@ func Login_handler(user_service user.Service, session_service session.Service) h
 				return
 			}
 
-			session_token, csrf_token := session_service.Create(user_id)
+			var session_token string
+			var csrf_token string
+
+			session_token, err = session_service.Retrieve(user_id)
+			if err != nil {
+				session_token, csrf_token = session_service.Create(user_id)
+			}
+
+			csrf_token = session_service.Csrf(session_token)
 
 			cookie := http.Cookie{Name: "session_token", Value: session_token, HttpOnly: true, Path: "/"}
 			http.SetCookie(w, &cookie)
+
 			w.WriteHeader(http.StatusOK)
+
 			js, err := json.Marshal(csrf_token)
 			w.Write(js)
+
 		}
 
 	}
@@ -63,6 +74,12 @@ func Csrf_handler(user_service user.Service, session_service session.Service) ht
 
 			if err != nil {
 				http.Error(w, "session token not present", http.StatusBadRequest)
+				return
+			}
+
+			_, err = session_service.Resolve(cookie.Value)
+			if err != nil {
+				http.Error(w, "session expired", http.StatusBadRequest)
 				return
 			}
 

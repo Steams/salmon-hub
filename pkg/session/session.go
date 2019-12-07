@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"github.com/steams/salmon-hub/pkg/rand"
 	"strings"
 )
@@ -11,7 +12,8 @@ const (
 
 type Service interface {
 	Create(user_id string) (string, string)
-	Get(session_token string) string
+	Retrieve(user_id string) (string, error)
+	Resolve(session_token string) (string, error)
 	Delete(session_token string)
 	Csrf(session_token string) string
 	Validate(session_token, csrf_token string) bool
@@ -19,8 +21,9 @@ type Service interface {
 
 type Repository interface {
 	Add(user_id, session_id string)
-	Get(session_id string) string
+	Resolve(session_id string) string
 	Delete(session_id string)
+	Retrieve(user_id string) string
 }
 
 type service_imp struct {
@@ -42,12 +45,23 @@ func (s service_imp) Create(user_id string) (session_token string, csrf_token st
 	return token, csrfToken
 }
 
-func (s service_imp) Get(session_token string) string {
+func (s service_imp) Retrieve(user_id string) (string, error) {
+	session_id := s.repo.Retrieve(user_id)
+	if session_id == "" {
+		return "", errors.New("no session")
+	}
+
+	return to_token(session_id), nil
+}
+
+func (s service_imp) Resolve(session_token string) (string, error) {
 	id := from_token(session_token)
 
-	user_id := s.repo.Get(id)
-	return user_id
-
+	user_id := s.repo.Resolve(id)
+	if user_id == "" {
+		return "", errors.New("no session")
+	}
+	return user_id, nil
 }
 
 // TODO this needs to vaidatte that the id actually existing
