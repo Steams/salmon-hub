@@ -94,7 +94,8 @@ func Media_handler(media_service media.Service, session_service session.Service)
 			user_id, err := session_service.Resolve(cookie.Value)
 
 			if err != nil {
-				http.Error(w,"invalid sessionn id", http.StatusBadRequest)
+				http.Error(w, "invalid sessionn id", http.StatusBadRequest)
+				return
 			}
 
 			media_list := media_service.List(user_id)

@@ -1,13 +1,18 @@
 package session
 
 import (
+	// "crypto/aes"
+	// "crypto/cipher"
+	// crypto_rand "crypto/rand"
 	"errors"
+	// "fmt"
 	"github.com/steams/salmon-hub/pkg/rand"
+	// "io"
 	"strings"
 )
 
 const (
-	SECRET_KEY = "secret"
+	SECRET_KEY = "16bytesecrethere"
 )
 
 type Service interface {
@@ -83,23 +88,73 @@ func to_token(session_id string) string {
 	return encrypt("SESSION-TOKEN:"+session_id, SECRET_KEY)
 }
 
-func to_csrf(session_id string) string {
-	return encrypt("CSRF-TOKEN:"+session_id, SECRET_KEY)
-}
-
 func from_token(token string) string {
 	//decrypt token,split token on colon and take second value in array
 	return strings.Split(decrypt(token, SECRET_KEY), ":")[1]
+}
+
+func to_csrf(session_id string) string {
+	return encrypt("CSRF-TOKEN:"+session_id, SECRET_KEY)
 }
 
 func generate_large_random() string {
 	return rand.Hex_128()
 }
 
+// TODO These should be in another module
 func encrypt(s, secret string) string {
+	// key := []byte(secret)
+
+	// plaintext := []byte(s)
+
+	// block, err := aes.NewCipher(key)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// nonce := make([]byte, 12)
+	// if _, err := io.ReadFull(crypto_rand.Reader, nonce); err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// aesgcm, err := cipher.NewGCM(block)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
+	// return string(ciphertext)
 	return s
+
 }
 
 func decrypt(s, secret string) string {
+	// key := []byte(secret)
+	// ciphertext := []byte(s)
+
+	// block, err := aes.NewCipher(key)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// aesgcm, err := cipher.NewGCM(block)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// nonceSize := aesgcm.NonceSize()
+	// if len(ciphertext) < nonceSize {
+	// 	fmt.Println(err)
+	// }
+
+	// nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+	// plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	// fmt.Printf("%s\n", plaintext)
+	// return string(plaintext)
 	return s
 }

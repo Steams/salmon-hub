@@ -37,6 +37,7 @@ func (s server_imp) Run() error {
 	http.HandleFunc("/api/media", handlers.API_Media_handler(s.mediaService))
 	http.HandleFunc("/api/register", handlers.Register_handler(s.userService, s.sessionService))
 	// http.HandleFunc("/api/verify", verification_handler)
+	http.HandleFunc("/assets", assets_handler)
 	http.HandleFunc("/", file_handler)
 	return http.ListenAndServe(":"+s.port, nil)
 }
@@ -55,5 +56,13 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// path := "/home/steams/Development/audigo/salmon-web-client/" + r.URL.Path[1:]
 	path := "/home/steams/Development/audigo/salmon-web-client/index.html"
+	http.ServeFile(w, r, path)
+}
+
+func assets_handler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+
+	fmt.Println(r.URL.Path[2:])
+	path := "/home/steams/Development/audigo/salmon-web-client/assets/" + r.URL.Path[2:]
 	http.ServeFile(w, r, path)
 }

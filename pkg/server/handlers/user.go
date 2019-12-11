@@ -44,9 +44,9 @@ func Login_handler(user_service user.Service, session_service session.Service) h
 			session_token, err = session_service.Retrieve(user_id)
 			if err != nil {
 				session_token, csrf_token = session_service.Create(user_id)
+			} else {
+				csrf_token = session_service.Csrf(session_token)
 			}
-
-			csrf_token = session_service.Csrf(session_token)
 
 			cookie := http.Cookie{Name: "session_token", Value: session_token, HttpOnly: true, Path: "/"}
 			http.SetCookie(w, &cookie)

@@ -6,6 +6,7 @@ type Media struct {
 	Album    string
 	Duration int
 	Playlist string
+	Art      string
 	Hash     string
 }
 
