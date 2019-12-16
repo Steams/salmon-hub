@@ -16,6 +16,7 @@ CREATE TABLE media (
     artist text,
     album text,
     duration int,
+    number int,
     playlist text,
     art text,
     hash text,
@@ -33,17 +34,17 @@ type repository struct {
 
 func (r repository) Add(id string, m Media) {
 
-	stmt, err := r.db.Preparex("INSERT INTO Media(title, artist, album, duration, playlist, art, hash, userid) values(?,?,?,?,?,?,?,?)")
+	stmt, err := r.db.Preparex("INSERT INTO Media(title, artist, album, duration, number, playlist, art, hash, userid) values(?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		panic(err)
 	}
-	stmt.MustExec(m.Title, m.Artist, m.Album, m.Duration, m.Playlist, m.Art, m.Hash, id)
+	stmt.MustExec(m.Title, m.Artist, m.Album, m.Duration, m.Number, m.Playlist, m.Art, m.Hash, id)
 
 }
 
 func (r repository) List(user_id string) []Media {
 
-	rows, err := r.db.Queryx("Select title,artist,album,duration,playlist,art,hash FROM media WHERE userid=$1", user_id)
+	rows, err := r.db.Queryx("Select title,artist,album,duration,number,playlist,art,hash FROM media WHERE userid=$1", user_id)
 	if err != nil {
 		log.Fatalln(err)
 	}
