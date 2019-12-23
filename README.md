@@ -1,4 +1,4 @@
-# Salmon - Golabal Hub
+# Salmon - Global Hub
 
 Global Back-end sever for Salmon streaming platform providing account management and library synchronization.
 
