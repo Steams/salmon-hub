@@ -37,7 +37,7 @@ func (s server_imp) Run() error {
 	http.HandleFunc("/api/media", handlers.API_Media_handler(s.mediaService))
 	http.HandleFunc("/api/register", handlers.Register_handler(s.userService, s.sessionService))
 	// http.HandleFunc("/api/verify", verification_handler)
-	http.HandleFunc("/assets", assets_handler)
+	http.HandleFunc("/web_assets/", assets_handler)
 	http.HandleFunc("/", file_handler)
 	return http.ListenAndServe(":"+s.port, nil)
 }
@@ -49,6 +49,7 @@ func enableCors(w *http.ResponseWriter) {
 func file_handler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
+	fmt.Println("fie handler url path")
 	fmt.Println(r.URL.Path)
 	if r.URL.Path == "/elm.js" {
 		http.ServeFile(w, r, "/home/steams/Development/audigo/salmon-web-client/elm.js")
@@ -62,7 +63,9 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 func assets_handler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	fmt.Println(r.URL.Path[2:])
-	path := "/home/steams/Development/audigo/salmon-web-client/assets/" + r.URL.Path[2:]
+	fmt.Println("REquest for assets")
+	fmt.Println(r.URL.Path)
+	path := "/home/steams/Development/audigo/salmon-hub" + r.URL.Path
+	fmt.Println(path)
 	http.ServeFile(w, r, path)
 }
