@@ -1,0 +1,4 @@
+port: "8080"
+clean_db: false
+db: "./salmon.db"
+dev: true

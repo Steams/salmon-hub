@@ -2,11 +2,14 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/spf13/viper"
 	"github.com/steams/salmon-hub/pkg/media"
 	"github.com/steams/salmon-hub/pkg/server/handlers"
 	"github.com/steams/salmon-hub/pkg/session"
 	"github.com/steams/salmon-hub/pkg/user"
-	"net/http"
 )
 
 type Server interface {
@@ -52,20 +55,39 @@ func file_handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("fie handler url path")
 	fmt.Println(r.URL.Path)
 	if r.URL.Path == "/elm.js" {
-		http.ServeFile(w, r, "/home/steams/Development/audigo/salmon-web-client/elm.js")
+
+		if viper.GetBool("dev") {
+			http.ServeFile(w, r, "/home/steams/Development/audigo/salmon-web-client/elm.js")
+			return
+		}
+
+		dir, _ := os.Getwd()
+		path := dir + "/web_assets/elm.js"
+		http.ServeFile(w, r, path)
 		return
 	}
-	// path := "/home/steams/Development/audigo/salmon-web-client/" + r.URL.Path[1:]
-	path := "/home/steams/Development/audigo/salmon-web-client/index.html"
+
+	if viper.GetBool("dev") {
+
+		fmt.Println("DEV MODE")
+		path := "/home/steams/Development/audigo/salmon-web-client/index.html"
+		http.ServeFile(w, r, path)
+		return
+	}
+
+	fmt.Println("PROD MODE")
+
+	dir, _ := os.Getwd()
+	path := dir + "/web_assets/index.html"
 	http.ServeFile(w, r, path)
 }
 
 func assets_handler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	fmt.Println("REquest for assets")
-	fmt.Println(r.URL.Path)
-	path := "/home/steams/Development/audigo/salmon-hub" + r.URL.Path
-	fmt.Println(path)
+	dir, _ := os.Getwd()
+
+	path := dir + r.URL.Path
+
 	http.ServeFile(w, r, path)
 }
